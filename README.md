@@ -2,7 +2,7 @@
 
 A simple and lightweight application launcher for Linux desktops.
 
-![Pyauncher Screenshot](https://i.imgur.com/your-screenshot.png)  <!-- Replace with a real screenshot -->
+![Pyauncher Screenshot](./pics/interface.png)
 
 ## Features
 
