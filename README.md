@@ -1,8 +1,8 @@
-# Kauncher
+# Pyauncher
 
 A simple and lightweight application launcher for Linux desktops.
 
-![Kauncher Screenshot](https://i.imgur.com/your-screenshot.png)  <!-- Replace with a real screenshot -->
+![Pyauncher Screenshot](https://i.imgur.com/your-screenshot.png)  <!-- Replace with a real screenshot -->
 
 ## Features
 
@@ -26,8 +26,8 @@ These instructions will get you a copy of the project up and running on your loc
 
 1.  **Clone the repository:**
     ```bash
-    git clone https://github.com/your-username/kauncher.git
-    cd kauncher
+    git clone https://github.com/your-username/pyauncher.git
+    cd pyauncher
     ```
 
 2.  **Create a virtual environment:**
