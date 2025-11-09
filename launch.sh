@@ -4,13 +4,18 @@
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 # Define paths for the venv and the main script
-VENV_PYTHON="$SCRIPT_DIR/venv/bin/python"
+VENV_DIR="$SCRIPT_DIR/venv"
+VENV_PYTHON="$VENV_DIR/bin/python"
 MAIN_SCRIPT="$SCRIPT_DIR/main.py"
+REQUIREMENTS_FILE="$SCRIPT_DIR/requirements.txt"
 
-# Check if the venv python and main script exist
-if [ ! -f "$VENV_PYTHON" ]; then
-    echo "Error: Python interpreter not found in venv."
-    exit 1
+# Check if the venv directory exists, if not create it
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv "$VENV_DIR"
+    # Activate the venv and install requirements
+    echo "Installing requirements..."
+    "$VENV_PYTHON" -m pip install -r "$REQUIREMENTS_FILE"
 fi
 
 if [ ! -f "$MAIN_SCRIPT" ]; then
