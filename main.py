@@ -128,7 +128,7 @@ class Launcher(QWidget):
     def __init__(self):
         super().__init__()
 
-        self.setWindowTitle('Kauncher')
+        self.setWindowTitle('Pyauncher')
         self.setWindowFlags(Qt.FramelessWindowHint | Qt.WindowStaysOnTopHint)
         self.resize(800, 400)
 
