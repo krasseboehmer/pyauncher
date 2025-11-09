@@ -47,10 +47,25 @@ These instructions will get you a copy of the project up and running on your loc
 
 ## Usage
 
-To run the application, use the following command:
+The recommended way to run Pyauncher is by using the provided `launch.sh` script, which automatically handles the virtual environment.
+
+### Launching with `launch.sh`
+
+To run the application using the `launch.sh` script, simply execute it from the project root:
 
 ```bash
-source venv/bin/activate && python3 main.py
+./launch.sh
+```
+
+This script will automatically use the Python interpreter from the `venv` directory to run `main.py`.
+
+### Launching by activating the virtual environment (Alternative)
+
+If you prefer to activate the virtual environment manually, you can do so with the following commands:
+
+```bash
+source venv/bin/activate
+python3 main.py
 ```
 
 You can also create a desktop shortcut or a keybinding in your display manager to launch the application more easily.
