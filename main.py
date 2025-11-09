@@ -5,105 +5,27 @@ from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QLi
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QIcon
 
-from xdg.BaseDirectory import xdg_data_dirs
+import json
+from xdg.BaseDirectory import xdg_data_dirs, xdg_cache_home
 from xdg.DesktopEntry import DesktopEntry
 from xdg.IconTheme import getIconPath
 
-def get_linux_distribution():
+def get_applications_data():
     """
-    Determines the Linux distribution using /etc/os-release.
-    Returns a dictionary with 'ID' and 'ID_LIKE' if found, otherwise empty.
+    Retrieves application data (name, exec, icon) from a cache file if it
+    exists, otherwise it scans for .desktop files, creates the cache, and
+    returns the data.
     """
-    distro_info = {}
-    if os.path.exists('/etc/os-release'):
-        with open('/etc/os-release', 'r') as f:
-            for line in f:
-                line = line.strip()
-                if line.startswith('ID='):
-                    distro_info['ID'] = line.split('=')[1].strip('"')
-                elif line.startswith('ID_LIKE='):
-                    distro_info['ID_LIKE'] = line.split('=')[1].strip('"')
-    return distro_info
+    cache_file = os.path.join(xdg_cache_home, 'pyauncher_cache.json')
+    
+    if os.path.exists(cache_file):
+        with open(cache_file, 'r') as f:
+            try:
+                return json.load(f)
+            except json.JSONDecodeError:
+                pass # Cache is corrupt, rebuild it
 
-def run_command(command_args):
-    """
-    Runs a shell command and returns its stdout if successful, None otherwise.
-    """
-    try:
-        result = subprocess.run(
-            command_args,
-            capture_output=True,
-            text=True,
-            check=False, # Don't raise an exception for non-zero exit codes
-            encoding='utf-8', # Explicitly set encoding
-            errors='replace' # Replace unencodable characters
-        )
-        if result.returncode == 0:
-            return result.stdout
-        else:
-            return None
-    except FileNotFoundError:
-        return None
-    except Exception as e:
-        return None
-
-def get_installed_applications():
-    """
-    Attempts to list installed applications on a Linux system using various
-    package managers.
-    """
-    applications = set()
-    desktop_files = []
-    for data_dir in xdg_data_dirs:
-        applications_dir = os.path.join(data_dir, 'applications')
-        if os.path.isdir(applications_dir):
-            for filename in os.listdir(applications_dir):
-                if filename.endswith('.desktop'):
-                    try:
-                        entry = DesktopEntry(os.path.join(applications_dir, filename))
-                        applications.add(entry.getName())
-                    except Exception:
-                        continue
-    return sorted(list(applications))
-
-def get_application_icon_path(application_name: str, size: int = 48) -> str | None:
-    """
-    Retrieves the full path to an application's icon on a Linux desktop.
-    """
-    desktop_files = []
-    for data_dir in xdg_data_dirs:
-        applications_dir = os.path.join(data_dir, 'applications')
-        if os.path.isdir(applications_dir):
-            for filename in os.listdir(applications_dir):
-                if filename.endswith('.desktop'):
-                    desktop_files.append(os.path.join(applications_dir, filename))
-
-    icon_name = None
-    for d_file in desktop_files:
-        try:
-            entry = DesktopEntry(d_file)
-            if application_name.lower() == entry.getName().lower() or \
-               application_name.lower() == os.path.basename(d_file).replace('.desktop', '').lower():
-                icon_name = entry.getIcon()
-                if icon_name:
-                    break
-        except Exception:
-            continue
-
-    if icon_name:
-        icon_path = getIconPath(icon_name, size=size)
-        if icon_path and os.path.exists(icon_path):
-            return icon_path
-        
-        if os.path.exists(icon_name):
-            return icon_name
-
-    return None
-
-def get_application_exec(application_name: str) -> str | None:
-    """
-    Retrieves the executable command for an application from its .desktop file.
-    """
+    applications = {}
     desktop_files = []
     for data_dir in xdg_data_dirs:
         applications_dir = os.path.join(data_dir, 'applications')
@@ -115,13 +37,36 @@ def get_application_exec(application_name: str) -> str | None:
     for d_file in desktop_files:
         try:
             entry = DesktopEntry(d_file)
-            if application_name.lower() == entry.getName().lower() or \
-               application_name.lower() == os.path.basename(d_file).replace('.desktop', '').lower():
-                return entry.getExec()
+            if entry.getNoDisplay():
+                continue
+            
+            app_name = entry.getName()
+            icon_name = entry.getIcon()
+            exec_command = entry.getExec()
+
+            icon_path = None
+            if icon_name:
+                icon_path = getIconPath(icon_name, size=48)
+                if not icon_path or not os.path.exists(icon_path):
+                    if os.path.exists(icon_name):
+                        icon_path = icon_name
+                    else:
+                        icon_path = None
+            
+            applications[app_name] = {
+                'exec': exec_command,
+                'icon': icon_path
+            }
         except Exception:
             continue
+            
+    # Sort applications by name
+    sorted_apps = dict(sorted(applications.items()))
 
-    return None
+    with open(cache_file, 'w') as f:
+        json.dump(sorted_apps, f)
+
+    return sorted_apps
 
 
 class Launcher(QWidget):
@@ -168,17 +113,17 @@ class Launcher(QWidget):
             }
         """)
 
+        self.app_list.installEventFilter(self)
+
+        self.apps = get_applications_data()
         self.populate_apps()
         self.search_bar.setFocus()
-        self.search_bar.installEventFilter(self)
-        self.app_list.installEventFilter(self)
 
     def populate_apps(self):
         self.app_list.clear()
-        apps = get_installed_applications()
-        for app_name in apps:
-            icon_path = get_application_icon_path(app_name)
+        for app_name, app_data in self.apps.items():
             item = QListWidgetItem(app_name)
+            icon_path = app_data.get('icon')
             if icon_path:
                 item.setIcon(QIcon(icon_path))
             self.app_list.addItem(item)
@@ -190,9 +135,10 @@ class Launcher(QWidget):
 
     def launch_app(self, item):
         app_name = item.text()
-        exec_command = get_application_exec(app_name)
+        app_data = self.apps.get(app_name)
         
-        if exec_command:
+        if app_data:
+            exec_command = app_data.get('exec')
             # The exec command may contain placeholders like %U, %F, etc.
             # For simplicity, we'll remove them.
             command = exec_command.split('%')[0].strip()
