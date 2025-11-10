@@ -1,6 +1,7 @@
 import sys
 import os
 import subprocess
+import shlex
 from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLineEdit, QListWidget, QListWidgetItem
 from PySide6.QtCore import Qt, QEvent
 from PySide6.QtGui import QIcon
@@ -146,24 +147,13 @@ class Launcher(QWidget):
         
         if app_data:
             exec_command = app_data.get('exec')
-            # Remove common field codes as per XDG Desktop Entry Specification
-            # For simplicity, we'll remove them. A more robust solution might
-            # involve passing dummy arguments or parsing them more carefully.
-            command_parts = []
-            for part in exec_command.split():
-                if not part.startswith('%') or part in ['%u', '%U', '%f', '%F', '%i', '%c', '%k']:
-                    command_parts.append(part)
-            
-            command = [part for part in command_parts if not part.startswith('%')]
-            
-            if not command:
-                print(f"Error: No executable command found for '{app_name}'")
-                return
+            # Remove field codes like %U, %F, etc.
+            cleaned_command = ' '.join([part for part in exec_command.split() if not part.startswith('%')])
+            command = shlex.split(cleaned_command)
         else:
-            command = [app_name] # Fallback if app_data is missing, try to execute app_name directly
+            command = [app_name]
 
         try:
-            # Execute the command directly without shell=True for better process naming and security
             subprocess.Popen(command, start_new_session=True)
             QApplication.quit()
         except (FileNotFoundError, OSError) as e:
