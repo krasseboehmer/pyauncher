@@ -22,28 +22,22 @@ These instructions will get you a copy of the project up and running on your loc
 *   Python 3
 *   pip
 
-### Installation
+## Installation
 
-1.  **Clone the repository:**
+To install Pyauncher as a desktop application, follow these steps:
+
+1.  **Clone the repository and navigate to the project directory:**
     ```bash
     git clone https://github.com/krasseboehmer/pyauncher.git
     cd pyauncher
     ```
 
-2.  **Create a virtual environment:**
+2.  **Run the installation script:**
     ```bash
-    python3 -m venv venv
+    ./install.sh
     ```
 
-3.  **Activate the virtual environment:**
-    ```bash
-    source venv/bin/activate
-    ```
-
-4.  **Install the dependencies:**
-    ```bash
-    pip install -r requirements.txt
-    ```
+3.  **You can now launch Pyauncher from your application menu.**
 
 ## Usage
 
@@ -69,6 +63,14 @@ python3 main.py
 ```
 
 You can also create a desktop shortcut or a keybinding in your display manager to launch the application more easily.
+
+## Uninstall
+
+To uninstall Pyauncher, run the `uninstall.sh` script from the project directory:
+
+```bash
+./uninstall.sh
+```
 
 ## Contributing
 
