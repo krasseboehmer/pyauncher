@@ -146,17 +146,30 @@ class Launcher(QWidget):
         
         if app_data:
             exec_command = app_data.get('exec')
-            # The exec command may contain placeholders like %U, %F, etc.
-            # For simplicity, we'll remove them.
-            command = exec_command.split('%')[0].strip()
+            # Remove common field codes as per XDG Desktop Entry Specification
+            # For simplicity, we'll remove them. A more robust solution might
+            # involve passing dummy arguments or parsing them more carefully.
+            command_parts = []
+            for part in exec_command.split():
+                if not part.startswith('%') or part in ['%u', '%U', '%f', '%F', '%i', '%c', '%k']:
+                    command_parts.append(part)
+            
+            command = [part for part in command_parts if not part.startswith('%')]
+            
+            if not command:
+                print(f"Error: No executable command found for '{app_name}'")
+                return
         else:
-            command = app_name
+            command = [app_name] # Fallback if app_data is missing, try to execute app_name directly
 
         try:
-            subprocess.Popen(command, shell=True, start_new_session=True)
+            # Execute the command directly without shell=True for better process naming and security
+            subprocess.Popen(command, start_new_session=True)
             QApplication.quit()
-        except (FileNotFoundError, OSError):
-            print(f"Error: Could not find application '{command}'")
+        except (FileNotFoundError, OSError) as e:
+            print(f"Error launching '{' '.join(command)}': {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred: {e}")
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
