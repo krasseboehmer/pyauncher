@@ -116,8 +116,6 @@ class Launcher(QWidget):
             }
         """)
 
-        self.app_list.installEventFilter(self)
-
         self.apps = get_applications_data()
         self.populate_apps()
         self.search_bar.setFocus()
@@ -160,54 +158,23 @@ class Launcher(QWidget):
         except (FileNotFoundError, OSError):
             print(f"Error: Could not find application '{command}'")
 
-    def eventFilter(self, watched, event):
-        if watched == self.app_list and event.type() == QEvent.KeyPress:
-            # Check for printable characters, but ignore modifiers
-            if event.key() not in (Qt.Key_Up, Qt.Key_Down, Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape, Qt.Key_Shift, Qt.Key_Control, Qt.Key_Alt, Qt.Key_Meta):
-                if event.text():
-                    self.search_bar.setFocus()
-                    QApplication.sendEvent(self.search_bar, event)
-                    return True # Event handled
-        return super().eventFilter(watched, event)
-
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
             QApplication.quit()
-        elif event.key() in [Qt.Key_Up, Qt.Key_Down]:
-            if self.search_bar.hasFocus():
-                if event.key() == Qt.Key_Down:
-                    if self.app_list.count() > 0:
-                        # find first visible item and select it
-                        for i in range(self.app_list.count()):
-                            if not self.app_list.item(i).isHidden():
-                                self.app_list.setCurrentRow(i)
-                                self.app_list.setFocus()
-                                break
-            elif self.app_list.hasFocus():
-                current_row = self.app_list.currentRow()
-                if event.key() == Qt.Key_Up:
-                    first_visible_item_index = -1
-                    for i in range(self.app_list.count()):
-                        if not self.app_list.item(i).isHidden():
-                            first_visible_item_index = i
-                            break
-                    
-                    if current_row == first_visible_item_index:
-                        self.search_bar.setFocus()
-                        return
-                    
-                    # find previous visible item
-                    for i in range(current_row - 1, -1, -1):
-                        if not self.app_list.item(i).isHidden():
-                            self.app_list.setCurrentRow(i)
-                            break
-
-                elif event.key() == Qt.Key_Down:
-                    # find next visible item
-                    for i in range(current_row + 1, self.app_list.count()):
-                        if not self.app_list.item(i).isHidden():
-                            self.app_list.setCurrentRow(i)
-                            break
+        elif event.key() == Qt.Key_Up:
+            current_row = self.app_list.currentRow()
+            # find previous visible item
+            for i in range(current_row - 1, -1, -1):
+                if not self.app_list.item(i).isHidden():
+                    self.app_list.setCurrentRow(i)
+                    break
+        elif event.key() == Qt.Key_Down:
+            current_row = self.app_list.currentRow()
+            # find next visible item
+            for i in range(current_row + 1, self.app_list.count()):
+                if not self.app_list.item(i).isHidden():
+                    self.app_list.setCurrentRow(i)
+                    break
         elif event.key() == Qt.Key_Return or event.key() == Qt.Key_Enter:
             selected_item = self.app_list.currentItem()
             if selected_item:
@@ -220,7 +187,8 @@ class Launcher(QWidget):
                         self.launch_app(item)
                         break
         else:
-            super().keyPressEvent(event)
+            self.search_bar.setFocus()
+            QApplication.sendEvent(self.search_bar, event)
 
 
 if __name__ == '__main__':
